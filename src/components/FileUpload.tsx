@@ -5,14 +5,15 @@ import { useDropzone } from "react-dropzone";
 import { uploadtoS3 } from "@/lib/s3";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
-import {toast} from "react-hot-toast";
-
+import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 type Props = {};
 
 const FileUpload = () => {
   const [uploading, setUploading] = useState(false);
-  const { mutate,isPending} = useMutation({
+  const router = useRouter();
+  const { mutate, isPending } = useMutation({
     mutationFn: async ({
       file_key,
       file_name,
@@ -44,10 +45,9 @@ const FileUpload = () => {
           return;
         }
         mutate(data, {
-          onSuccess: (data) => {
-            console.log(data);
-            toast.success(data.message);
-            setUploading(false);
+          onSuccess: ({ chat_id }) => {
+            toast.success("Chat Created");
+            router.push(`/chat/${chat_id}`);
           },
           onError: (err) => {
             toast.error("Error Creating Chat");
@@ -70,7 +70,7 @@ const FileUpload = () => {
         })}
       >
         <input {...getInputProps()} />
-        {uploading||isPending ? (
+        {uploading || isPending ? (
           <>
             <Loader2 className="h-10 w-10 text-blue-500 animate-spin" />
             <p>Spilling Tea to GPT...</p>

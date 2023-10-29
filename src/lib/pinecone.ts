@@ -1,7 +1,7 @@
 import {
   Pinecone,
   PineconeRecord,
-  utils as PineconeUtils,
+
 } from "@pinecone-database/pinecone";
 import { downlordFromS3 } from "./s3-server";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
@@ -13,16 +13,13 @@ import { getEmbeddings } from "./embeddings";
 
 import md5 from "md5";
 import { convertToAscii } from "./utils";
-let pinecone: Pinecone | null = null;
 
-export const getPinecone = async () => {
-  if (pinecone) {
-    pinecone = new Pinecone({
-      apiKey: process.env.PINECONE_API_KEY!,
-      environment: process.env.PINECONE_ENVIRONMENT!,
-    });
-  }
-  return pinecone;
+
+export const getPineconeClient = () => {
+  return new Pinecone({
+    environment: process.env.PINECONE_ENVIRONMENT!,
+    apiKey: process.env.PINECONE_API_KEY!,
+  });
 };
 
 type PDFPage = {
@@ -32,41 +29,47 @@ type PDFPage = {
   };
 };
 export async function loadS3iIntoPinecone(fileKey: string) {
-    console.log(fileKey);
-    
+  console.log("downloading s3 into file system");
   const file_name = await downlordFromS3(fileKey);
-  console.log(file_name);
   if (!file_name) {
-    throw new Error("Could not downlord");
+    throw new Error("could not download from s3");
   }
+  console.log("loading pdf into memory" + file_name);
   const loader = new PDFLoader(file_name);
   const pages = (await loader.load()) as PDFPage[];
+
+  // 2. split and segment the pdf
   const documents = await Promise.all(pages.map(prepareDocument));
+
+  // 3. vectorise and embed individual documents
   const vectors = await Promise.all(documents.flat().map(embedDocument));
-  const client = await getPinecone();
-  const PineconeIndex = client?.index("docutalker");
-  const namespace = convertToAscii(fileKey);
- console.log(PineconeIndex,client,vectors,namespace);
- 
-  const records = [{id:'1',vectors}];
+  // 4. upload to pinecone
+  const client = await getPineconeClient();
+  const pineconeIndex = await client.index("docutalker");
+  const namespace = pineconeIndex.namespace(convertToAscii(fileKey));
 
-//   await PineconeIndex?.upsert(records);
+  console.log("inserting vectors into pinecone");
+  await pineconeIndex.upsert(vectors);
 
-  return pages;
+  return documents[0];
 }
 async function embedDocument(doc: Document) {
   try {
-    const embedding = await getEmbeddings(doc.pageContent);
+    const embeddings = await getEmbeddings(doc.pageContent);
     const hash = md5(doc.pageContent);
+
     return {
       id: hash,
-      values: embedding,
+      values: embeddings,
       metadata: {
         text: doc.metadata.text,
         pageNumber: doc.metadata.pageNumber,
       },
     } as PineconeRecord;
-  } catch (error) {}
+  } catch (error) {
+    console.log("error embedding document", error);
+    throw error;
+  }
 }
 export const truncateStringByBytes = (str: string, bytes: number) => {
   const enc = new TextEncoder();
