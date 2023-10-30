@@ -19,6 +19,7 @@ const PDFViewer = ({ pdf_url }: Props) => {
       {isLoading && (
        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
        <Loader2 className="w-6 h-6 animate-spin"/>
+       <p className="text-sm font-semibold">Issue with PDFPreview,Please continue with prompt</p>
    </div>
       )}
       <iframe
