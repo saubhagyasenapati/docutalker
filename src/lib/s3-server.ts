@@ -1,6 +1,7 @@
 import AWS from 'aws-sdk'
 import fs from 'fs'
 import os from 'os';
+import path from 'path'
 export async function downlordFromS3(file_key:string) {
     try {
         AWS.config.update({
@@ -20,7 +21,7 @@ export async function downlordFromS3(file_key:string) {
        
           const obj = await s3.getObject(params).promise();
           const tmpDir = os.tmpdir(); // Use the system's temporary directory
-          const file_name = `${tmpDir}\\pdf-${Date.now()}.pdf`; // Use backslashes for Windows
+          const file_name = path.join(tmpDir, `pdf-${Date.now()}.pdf`);// Use backslashes for Windows
           fs.writeFileSync(file_name,obj.Body as Buffer)
           return file_name;
     } catch (error) {
