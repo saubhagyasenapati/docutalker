@@ -2,12 +2,22 @@ import { UserButton, auth } from "@clerk/nextjs";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { LogIn } from "lucide-react";
+import { ArrowRight, LogIn } from "lucide-react";
 import FileUpload from "@/components/FileUpload";
+import { db } from "@/lib/db";
+import { chats } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export default async function Home() {
   const { userId } = await auth();
   const isAuth = !!userId;
+  let firstChat;
+  if (userId) {
+    firstChat = await db.select().from(chats).where(eq(chats.userId, userId));
+    if (firstChat) {
+      firstChat = firstChat[0];
+    }
+  }
   return (
     <div className="w-screen min-h-screen bg-gradient-to-r from-rose-100 to-teal-100">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ">
@@ -19,7 +29,14 @@ export default async function Home() {
             <UserButton afterSignOutUrl="/" />
           </div>
           <div className="flex mt-4">
-            <Button>Go to Chats</Button>
+          {isAuth && firstChat && (
+          
+                <Link href={`/chat/${firstChat.id}`}>
+                  <Button>
+                    Go to Chats <ArrowRight className="ml-2" />
+                  </Button>
+                </Link>
+          )}
           </div>
           <p className="max-w-xl mt-4 text-lg">
           Join a thriving community of millions, including students, researchers, and professionals, to instantly answer questions and gain a deeper understanding of research through the power of AI.

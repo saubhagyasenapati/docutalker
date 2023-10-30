@@ -42,28 +42,30 @@ export async function loadS3iIntoPinecone(fileKey: string) {
   const documents = await Promise.all(pages.map(prepareDocument));
 
   // 3. vectorise and embed individual documents
-  const vectors = await Promise.all(documents.flat().map(embedDocument));
+  const namespace =convertToAscii(fileKey);
+  const vectors = await Promise.all(
+    documents.flat().map((doc) => embedDocument(doc, namespace))
+  );
   // 4. upload to pinecone
   const client = await getPineconeClient();
   const pineconeIndex = await client.index("docutalker");
-  const namespace = pineconeIndex.namespace(convertToAscii(fileKey));
 
   console.log("inserting vectors into pinecone");
   await pineconeIndex.upsert(vectors);
 
   return documents[0];
 }
-async function embedDocument(doc: Document) {
+async function embedDocument(doc: Document,namespace:string) {
   try {
     const embeddings = await getEmbeddings(doc.pageContent);
     const hash = md5(doc.pageContent);
-
     return {
       id: hash,
       values: embeddings,
       metadata: {
         text: doc.metadata.text,
         pageNumber: doc.metadata.pageNumber,
+        fileKey:namespace
       },
     } as PineconeRecord;
   } catch (error) {

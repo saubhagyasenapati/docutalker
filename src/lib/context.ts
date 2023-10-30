@@ -12,12 +12,17 @@ export async function getMatchesFromEmbeddings(
       apiKey: process.env.PINECONE_API_KEY!,
     });
     const pineconeIndex = await client.index("docutalker");
-    const namespace = pineconeIndex.namespace(convertToAscii(fileKey));
+    const namespace = convertToAscii(fileKey);
+   
     const queryResult = await pineconeIndex.query({
       topK: 5,
       vector: embeddings,
       includeMetadata: true,
+      filter:{
+        "fileKey": { "$eq": namespace }
+      }
     });
+    console.log(queryResult);
     return queryResult.matches || [];
   } catch (error) {
     console.log("error querying embeddings", error);
