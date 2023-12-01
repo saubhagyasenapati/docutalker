@@ -1,4 +1,9 @@
 ## Hosted At https://docutalker.vercel.app/
+
+https://github.com/saubhagyasenapati/docutalker/assets/71456569/8ecbcd1d-1d60-4574-b3a6-30adbcd18b1e
+
+
+
 ## Installation Guidelines
 ## git clone https://github.com/saubhagyasenapati/docutalker.git
 ## cd docutalker
@@ -27,4 +32,4 @@
 ## Last Step
 ### npm run dev 
 ## Read to conquer the world with Your AI Document Companion
-## Saubhagya 31 OCT 2023
+## Saubhagya 1 Dec 2023
